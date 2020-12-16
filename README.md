@@ -6,5 +6,5 @@ This version of `R.JIVE` can then be installed, directly from GitHub, using the 
 ```
 install.packages('devtools')
 library(devtools)
-install_github("lockEF/MultiwayClassification")
+install_github("lockEF/r.jive")
 ``` 
