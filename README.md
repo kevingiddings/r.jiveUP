@@ -6,6 +6,6 @@ This version of `R.JIVE` can then be installed, directly from GitHub, using the 
 ```
 install.packages('devtools')
 library(devtools) 
-install_github("lockEF/r.jive")
+install_github("kevingiddings/r.jiveUP")
 ``` 
 [1] EF Palzer, C Wendt, R Bowler, CP Hersh, SE Safo, EF Lock. sJIVE: Supervised Joint and Individual Variation Explained. arXiv preprint: 2102.13278, 2021. https://arxiv.org/abs/2102.13278 
