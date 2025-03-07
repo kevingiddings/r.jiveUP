@@ -89,7 +89,7 @@ jive <- function (data, rankJ=1, rankA=rep(1,length(data)), method="perm", dname
             }
          }
       }
-      temp <- (data, n, d, conv=conv, maxiter=maxiter, orthIndiv=orthIndiv, showProgress=showProgress)
+      temp <- bic.jive(data, n, d, conv=conv, maxiter=maxiter, orthIndiv=orthIndiv, showProgress=showProgress)
       joint <- temp$joint
       individual <- temp$individual
       rankJ <- temp$rankJ
