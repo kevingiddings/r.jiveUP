@@ -280,8 +280,8 @@ bic.jive <- function (data, n=unlist(lapply(data,ncol))*unlist(lapply(data,nrow)
     # Calculate BIC
     for (k in 1:length(data)) { sse[k] <- norm(data[[k]] - current$joint[[k]] - current$individual[[k]], type="f")^2 }
     p.jive <- 0
-    current.bic <-  sum(n*log(sse/n)) + p.jive * lambda
-   bic.table <- c(rankJ, rankA, current.bic)
+    current.bic <-  sum(n*log(sse/(n-p.jive-1))) + p.jive * lambda # DOI:10.1109/ICARCV.2014.7064362
+   bic.table <- c(rankJ, rankA,p.jive, current.bic)
 
    while (bic.improve) {
       bic.improve <- F
@@ -290,10 +290,10 @@ bic.jive <- function (data, n=unlist(lapply(data,ncol))*unlist(lapply(data,nrow)
       temp[[1]] <- jive.iter(data, rankJ+1, rankA, conv, maxiter, orthIndiv, showProgress=showProgress)
        # Calculate BIC
        for (k in 1:length(data)) { sse[k] <- norm(data[[k]] - temp[[1]]$joint[[k]] - temp[[1]]$individual[[k]], type="f")^2 }
-       p.jive <- sum(sum(d):(sum(d)-(rankJ+1)+1)) + sum(nc:(nc-(rankJ+1)+1)) + pjsum(d, rankA) + pjsum(rep(nc,length(data))-(rankJ+1), rankA)
-       bic <- sum(n*log(sse/n)) + p.jive * lambda
+       p.jive <- nc*(l*(rankJ+1)+sum(rankA)) # DOI:10.1109/ICARCV.2014.7064362
+       bic <- sum(n*log(sse/(n-p.jive-1))) + p.jive * lambda # DOI:10.1109/ICARCV.2014.7064362
       bicvec <- bic
-      bic.table <- rbind(bic.table, c(rankJ+1, rankA, bic))
+      bic.table <- rbind(bic.table, c(rankJ + 1, rankA,p.jive, bic))
       for (i in 1:l) {
         tempR <- rankA
         tempR[i] <- tempR[i] + 1
@@ -302,13 +302,13 @@ bic.jive <- function (data, n=unlist(lapply(data,ncol))*unlist(lapply(data,nrow)
          temp[[i+1]] <- jive.iter(data, rankJ, tempR, conv, maxiter, orthIndiv, showProgress=showProgress)
           # Calculate BIC
           for (k in 1:length(data)) { sse[k] <- norm(data[[k]] - temp[[i+1]]$joint[[k]] - temp[[i+1]]$individual[[k]], type="f")^2 }
-          p.jive <- ifelse(rankJ==0,0,sum(sum(d):(sum(d)-rankJ+1)) + sum(nc:(nc-rankJ+1))) + pjsum(d, tempR) + pjsum(rep(nc,length(data))-rankJ, tempR)
-          bic <- sum(n*log(sse/n)) + p.jive * lambda
+          p.jive <- nc*(l*(rankJ+1)+sum(rankA)) # DOI:10.1109/ICARCV.2014.7064362
+          bic <- sum(n*log(sse/(n-p.jive-1))) + p.jive * lambda # DOI:10.1109/ICARCV.2014.7064362
         } else {
          bic <- NA
         }
          bicvec <- c(bicvec, bic)
-         bic.table <- rbind(bic.table, c(rankJ, tempR, bic))
+         bic.table <- rbind(bic.table, c(rankJ, tempR, p.jive,bic))
       }
       lowest.bic <- temp[[which.min(bicvec)]]
       if (min(bicvec,na.rm=T) < current.bic) {
