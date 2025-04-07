@@ -1,4 +1,4 @@
-jive <- function (data, rankJ=1, rankA=rep(1,length(data)), method="perm", dnames=names(data), conv="default", maxiter=1000, scale=TRUE, center=TRUE,orthIndiv=TRUE, est=TRUE, showProgress=TRUE) {
+jive <- function (data, rankJ=1, rankA=rep(1,length(data)), method="perm", bic_method = "old",dnames=names(data), conv="default", maxiter=1000, scale=TRUE, center=TRUE,orthIndiv=TRUE, est=TRUE, showProgress=TRUE) {
    # Get the number of data sets
   
    l <- length(data)
@@ -89,7 +89,7 @@ jive <- function (data, rankJ=1, rankA=rep(1,length(data)), method="perm", dname
             }
          }
       }
-      temp <- bic.jive(data, n, d, conv=conv, maxiter=maxiter, orthIndiv=orthIndiv, showProgress=showProgress)
+      temp <- bic.jive(data, n, d, bic_method=bic_method,conv=conv, maxiter=maxiter, orthIndiv=orthIndiv, showProgress=showProgress)
       joint <- temp$joint
       individual <- temp$individual
       rankJ <- temp$rankJ
@@ -254,7 +254,7 @@ pjsum <- function (dim,rank) {
 }
 
 # Determine ranks with bic
-bic.jive <- function (data, n=unlist(lapply(data,ncol))*unlist(lapply(data,nrow)), d=unlist(lapply(data,nrow)), conv=.000001, maxiter=1000, orthIndiv=TRUE, showProgress=TRUE) {
+bic.jive <- function (data, n=unlist(lapply(data,ncol))*unlist(lapply(data,nrow)), d=unlist(lapply(data,nrow)), bic_method="old",conv=.000001, maxiter=1000, orthIndiv=TRUE, showProgress=TRUE) {
    # Get the number of data sets
    l <- length(data)
 
@@ -280,7 +280,11 @@ bic.jive <- function (data, n=unlist(lapply(data,ncol))*unlist(lapply(data,nrow)
     # Calculate BIC
     for (k in 1:length(data)) { sse[k] <- norm(data[[k]] - current$joint[[k]] - current$individual[[k]], type="f")^2 }
     p.jive <- 0
-    current.bic <-  sum(n*log(sse/(n-p.jive-1))) + p.jive * lambda # DOI:10.1109/ICARCV.2014.7064362
+   if(bic_method == "new"){
+      current.bic <-  sum(n*log(sse/(n-p.jive-1))) + p.jive * lambda # DOI:10.1109/ICARCV.2014.7064362
+   }else{
+      current.bic <-  sum(n*log(sse/n)) + p.jive * lambda #original
+   }
    bic.table <- c(rankJ, rankA,p.jive, current.bic)
 
    while (bic.improve) {
@@ -290,8 +294,13 @@ bic.jive <- function (data, n=unlist(lapply(data,ncol))*unlist(lapply(data,nrow)
       temp[[1]] <- jive.iter(data, rankJ+1, rankA, conv, maxiter, orthIndiv, showProgress=showProgress)
        # Calculate BIC
        for (k in 1:length(data)) { sse[k] <- norm(data[[k]] - temp[[1]]$joint[[k]] - temp[[1]]$individual[[k]], type="f")^2 }
-       p.jive <- nc*(l*(rankJ+1)+sum(rankA)) # DOI:10.1109/ICARCV.2014.7064362
-       bic <- sum(n*log(sse/(n-p.jive-1))) + p.jive * lambda # DOI:10.1109/ICARCV.2014.7064362
+      if(bic_method == "new"){
+         p.jive <- nc*(l*(rankJ+1)+sum(rankA)) # DOI:10.1109/ICARCV.2014.7064362
+         bic <- sum(n*log(sse/(n-p.jive-1))) + p.jive * lambda # DOI:10.1109/ICARCV.2014.7064362
+      }else{
+         p.jive <- sum(sum(d):(sum(d)-(rankJ+1)+1)) + sum(nc:(nc-(rankJ+1)+1)) + pjsum(d, rankA) + pjsum(rep(nc,length(data))-(rankJ+1), rankA)
+         bic <- sum(n*log(sse/n)) + p.jive * lambda
+      }
       bicvec <- bic
       bic.table <- rbind(bic.table, c(rankJ + 1, rankA,p.jive, bic))
       for (i in 1:l) {
@@ -302,8 +311,13 @@ bic.jive <- function (data, n=unlist(lapply(data,ncol))*unlist(lapply(data,nrow)
          temp[[i+1]] <- jive.iter(data, rankJ, tempR, conv, maxiter, orthIndiv, showProgress=showProgress)
           # Calculate BIC
           for (k in 1:length(data)) { sse[k] <- norm(data[[k]] - temp[[i+1]]$joint[[k]] - temp[[i+1]]$individual[[k]], type="f")^2 }
-          p.jive <- nc*(l*(rankJ+1)+sum(rankA)) # DOI:10.1109/ICARCV.2014.7064362
-          bic <- sum(n*log(sse/(n-p.jive-1))) + p.jive * lambda # DOI:10.1109/ICARCV.2014.7064362
+          if(bic_method == "new"){ 
+              p.jive <- nc*(l*(rankJ+1)+sum(rankA)) # DOI:10.1109/ICARCV.2014.7064362
+              bic <- sum(n*log(sse/(n-p.jive-1))) + p.jive * lambda # DOI:10.1109/ICARCV.2014.7064362
+          }else{
+             p.jive <- ifelse(rankJ==0,0,sum(sum(d):(sum(d)-rankJ+1)) + sum(nc:(nc-rankJ+1))) + pjsum(d, tempR) + pjsum(rep(nc,length(data))-rankJ, tempR)
+             bic <- sum(n*log(sse/n)) + p.jive * lambda
+          }
         } else {
          bic <- NA
         }
